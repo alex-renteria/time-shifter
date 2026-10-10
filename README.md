@@ -19,6 +19,9 @@ npm test        # engine + time zone tests
 npm run build   # static site in dist/, ready to host anywhere
 ```
 
+Hosting: import the repo on Vercel (it detects Vite automatically: build `npm run build`,
+output `dist`). Every push to `main` then redeploys.
+
 ## Why build my own
 
 Timeshifter is a polished commercial product. Building my own version is a way to:
@@ -44,7 +47,8 @@ See [Disclaimer](#disclaimer).
 | **Whole hours only** | All advice uses whole clock hours ("sleep 9 pm – 5 am"), even in half-hour time zones such as India. |
 | **Multi-city trips** | One-way, round-trip and multi-city. Stays under 3 days count as short: you stay on your current clock. |
 | **Flight editing** | Change any flight and rebuild the plan. |
-| *Later:* now view, notifications | A "next 3 hours" view and reminders (calendar export first). |
+| **Calendar reminders** | One tap downloads the plan as calendar events with alerts, for Apple, Google or Outlook Calendar. |
+| *Later:* now view | A "next 3 hours" view. |
 
 The detailed spec, data model and roadmap are in [`docs/SPEC.md`](docs/SPEC.md).
 The science behind the algorithm is in [`docs/SCIENCE.md`](docs/SCIENCE.md).

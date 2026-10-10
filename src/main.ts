@@ -1,6 +1,8 @@
 import './style.css';
 import { AIRPORTS, airportLabel, findAirport } from './airports';
-import { buildPlan, validate, type Advice, type Flight, type Plan, type Profile } from './engine';
+import { buildPlan, validate, type Flight, type Plan, type Profile } from './engine';
+import { describe, fmtDate, fmtHour, fmtTime, ICONS } from './describe';
+import { buildIcs } from './ics';
 import { HOUR, localDateKey, zonedParts, zonedToInstant } from './time';
 
 // --- Form state ----------------------------------------------------------------------
@@ -67,31 +69,6 @@ function h<K extends keyof HTMLElementTagNameMap>(
   Object.assign(el, rest);
   for (const c of children) if (c != null) el.append(c);
   return el;
-}
-
-// --- Formatting ----------------------------------------------------------------------
-
-function fmtHour(hour: number, minute = 0): string {
-  const suffix = hour < 12 ? 'am' : 'pm';
-  const h12 = hour % 12 === 0 ? 12 : hour % 12;
-  return minute ? `${h12}:${String(minute).padStart(2, '0')} ${suffix}` : `${h12} ${suffix}`;
-}
-
-function fmtTime(tz: string, t: number): string {
-  const p = zonedParts(tz, t);
-  return fmtHour(p.hour, p.minute);
-}
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function fmtDate(tz: string, t: number): string {
-  const p = zonedParts(tz, t);
-  return `${WEEKDAYS[p.weekday]} ${p.day} ${MONTHS[p.month - 1]}`;
-}
-
-function fmtRange(a: Advice): string {
-  return `${fmtTime(a.tz, a.start)} – ${fmtTime(a.tz, a.end!)}`;
 }
 
 // --- Profile inputs ------------------------------------------------------------------
@@ -228,53 +205,6 @@ function addFlight() {
 
 // --- Plan rendering ------------------------------------------------------------------
 
-const ICONS: Record<Advice['kind'], string> = {
-  depart: '✈️',
-  arrive: '🛬',
-  sleep: '🛏️',
-  sleep_flight: '😴',
-  nap: '💤',
-  light_seek: '☀️',
-  light_avoid: '🕶️',
-  melatonin: '💊',
-  caffeine_cutoff: '☕',
-};
-
-function describe(a: Advice): { title: string; note?: string } {
-  switch (a.kind) {
-    case 'depart':
-      return { title: `Depart ${a.flight!.from.code} at ${fmtTime(a.tz, a.start)}`, note: `To ${a.flight!.to.city}` };
-    case 'arrive':
-      return { title: `Land in ${a.flight!.to.city} at ${fmtTime(a.tz, a.start)}`, note: 'Local time' };
-    case 'sleep': {
-      const s = a.shiftFromUsual;
-      const note =
-        s === undefined || Math.round(s) === 0
-          ? undefined
-          : `${Math.abs(Math.round(s))} h ${s > 0 ? 'earlier' : 'later'} than usual`;
-      return { title: `Sleep ${fmtRange(a)}`, note };
-    }
-    case 'sleep_flight':
-      return { title: `Sleep on the plane ${fmtRange(a)}`, note: 'Eye mask and earplugs help' };
-    case 'nap':
-      return { title: `Short nap OK between ${fmtRange(a)}`, note: 'Max 30 minutes. Skip it if you’re not tired' };
-    case 'light_seek':
-      return {
-        title: `Get bright light ${fmtRange(a)}`,
-        note: a.inFlight ? 'Window shade open, cabin or screen light on' : 'Go outside, or sit by a bright window',
-      };
-    case 'light_avoid':
-      return {
-        title: `Avoid bright light ${fmtRange(a)}`,
-        note: a.inFlight ? 'Shade down, eye mask on' : 'Sunglasses outside, dim lights inside',
-      };
-    case 'melatonin':
-      return { title: `Take melatonin at ${fmtTime(a.tz, a.start)}`, note: '0.5 mg, low dose' };
-    case 'caffeine_cutoff':
-      return { title: `No caffeine after ${fmtTime(a.tz, a.start)}` };
-  }
-}
-
 function summary(plan: Plan, flights: Flight[], profile: Profile): HTMLElement {
   const home = flights[0].from;
   const lines: string[] = [];
@@ -295,9 +225,31 @@ function summary(plan: Plan, flights: Flight[], profile: Profile): HTMLElement {
   return h('div', { class: 'card summary' }, h('h2', { textContent: 'Your plan' }), ...lines.map((l) => h('p', { textContent: l })));
 }
 
+function calendarCard(plan: Plan): HTMLElement {
+  const reminders = h('input', { type: 'checkbox', checked: true });
+  const button = h('button', { type: 'button', class: 'primary', textContent: '📅 Add to my calendar' });
+  button.addEventListener('click', () => {
+    const ics = buildIcs(plan.advice, { reminders: reminders.checked });
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const link = h('a', { href: url, download: 'jet-lag-plan.ics' });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  });
+  return h(
+    'div',
+    { class: 'card calendar' },
+    h('h2', { textContent: 'Get reminders' }),
+    h('p', { class: 'muted', textContent: 'Downloads every step as calendar events. Open the file to add them to Apple, Google or Outlook Calendar.' }),
+    h('label', { class: 'check' }, reminders, 'Alert me when each step starts'),
+    button,
+  );
+}
+
 function renderPlan(plan: Plan, flights: Flight[], profile: Profile) {
   const section = $('plan');
-  section.replaceChildren(summary(plan, flights, profile));
+  section.replaceChildren(summary(plan, flights, profile), calendarCard(plan));
 
   // Group into days on the local clock of wherever you are.
   let currentKey = '';

@@ -71,8 +71,8 @@ inside it, so it is easy to test against hand-worked cases and published example
 | **0. Docs** ✅ | This spec + the science notes | Settle the rules before writing code |
 | **1. Engine** ✅ | `src/engine.ts`, a pure function, plus tests on known trips (LAX→LHR, JFK→NRT, MEX→MAD, LHR→DEL, a 4-leg trip) | The algorithm is the product. Validate it before building any UI |
 | **2. Website** ✅ | Static site: sleep profile, up to 4 flights, day-by-day plan; saves the form in the browser | Works on any phone with nothing to install |
-| **3. Hosting + PWA** | Deploy (Vercel or GitHub Pages), add-to-home-screen, offline | Use it on a real trip |
-| **4. Notifications** | Web push or calendar export (.ics) of the advice | .ics is a cheap first step: reminders come from your existing calendar |
+| **3. Calendar export** ✅ | "Add to my calendar" downloads an .ics file: one event per step, optional alerts, times in UTC so any phone shows them in its own zone. Flights are left out (the airline already adds them) | Reminders on the phone with no app and no server |
+| **4. Hosting + PWA** | Deploy on Vercel from `main`, add-to-home-screen, offline | Use it on a real trip |
 | **5. Nice-to-haves** | Flight lookup by flight number, delay re-planning, sleep tracker import, feedback loop to tune personal shift rates | Personalization after the base works |
 
 ## Open decisions
