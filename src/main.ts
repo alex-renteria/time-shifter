@@ -30,14 +30,18 @@ function todayPlus(days: number): string {
 }
 
 const DEFAULT_STATE: FormState = {
-  profile: { sleepHour: 22, wakeHour: 6, preDays: 3, melatonin: true, caffeine: true },
+  profile: { sleepHour: 22, wakeHour: 6, preDays: 3, melatonin: true, caffeine: true, naps: true },
   flights: [{ from: 'LAX', to: 'LHR', date: todayPlus(7), time: '21:00', hours: 10, minutes: 30 }],
 };
 
 function loadState(): FormState {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved) as FormState;
+    if (saved) {
+      const parsed = JSON.parse(saved) as FormState;
+      // Older saved forms lack newer options: fill them from the defaults.
+      return { ...parsed, profile: { ...DEFAULT_STATE.profile, ...parsed.profile } };
+    }
   } catch {
     // Storage unavailable (private mode etc.): fall back to defaults.
   }
@@ -85,6 +89,7 @@ function initProfile() {
   $<HTMLSelectElement>('preDays').value = String(p.preDays);
   $<HTMLInputElement>('melatonin').checked = p.melatonin;
   $<HTMLInputElement>('caffeine').checked = p.caffeine;
+  $<HTMLInputElement>('naps').checked = p.naps;
 
   const sync = () => {
     state.profile = {
@@ -93,10 +98,11 @@ function initProfile() {
       preDays: Number($<HTMLSelectElement>('preDays').value),
       melatonin: $<HTMLInputElement>('melatonin').checked,
       caffeine: $<HTMLInputElement>('caffeine').checked,
+      naps: $<HTMLInputElement>('naps').checked,
     };
     saveState();
   };
-  for (const id of ['sleepHour', 'wakeHour', 'preDays', 'melatonin', 'caffeine']) $(id).addEventListener('change', sync);
+  for (const id of ['sleepHour', 'wakeHour', 'preDays', 'melatonin', 'caffeine', 'naps']) $(id).addEventListener('change', sync);
 }
 
 // --- Flight inputs -------------------------------------------------------------------

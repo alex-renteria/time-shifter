@@ -61,7 +61,16 @@ Rules that follow:
   next-day grogginess.
 - **What the planner does:** when advancing, 0.5 mg about 4 h before the target bedtime
   that night (the literature puts the best timing roughly 3–5 h before bedtime).
-  No melatonin advice when delaying.
+  No melatonin advice for shifting when delaying.
+- **To sleep on the plane:** standard (fast-release) melatonin peaks in the blood about
+  30–60 min after taking it, so the planner says **1 h before** the planned in-flight sleep.
+  It's only suggested when that sleep is **at least 4 h**: taken when you can't sleep it
+  off, melatonin causes daytime drowsiness and can slow adjustment. The in-flight sleep
+  is already placed in your *biological* night, so the dose lands at the right body time.
+  Doses of 0.5–5 mg work about equally well, and more than 5 mg adds nothing. If an
+  in-flight dose is planned, the clock-shifting dose for that same night is dropped, so
+  there is never a double dose.
+- **Caution:** people with epilepsy or taking warfarin should check with a doctor first.
 - A separate effect: at bedtime, melatonin can also help you fall asleep at an
   unfamiliar time.
 - The planner makes this **opt-in**, with a medical disclaimer.
@@ -77,8 +86,15 @@ Rules that follow:
 
 - Plan sleep around the **shifting body clock**, moving toward local bedtime over the
   course of the plan.
-- **Naps:** short (around 20–30 min), and kept away from the hours before the main sleep.
-  Long naps at the wrong biological time anchor the clock in place.
+- **Naps:** short (20–30 min, with an alarm) and early in the afternoon. Long naps, or
+  naps late in the day, pull the clock back toward the old time zone and eat into the
+  night's sleep.
+- **What the planner does (optional, "Include naps"):** on travel and adjustment days, it
+  offers a nap window of **9–7 h before that night's bedtime** (1–3 pm for a 10 pm
+  bedtime). The window is moved out of bright-light time, away from airports and flights,
+  and is shown on the day you land even if your clock is already adjusted. On long
+  flights with no planned sleep, a short nap is offered at least 6 h before the next
+  sleep.
 - **On the plane:** sleep if it fits the plan's sleep window, stay awake (and manage
   light) if it doesn't. "Sleep as much as possible on the plane" is not a rule.
 
@@ -104,5 +120,9 @@ Rules that follow:
   subjects.* J Physiol, 2003.
 - Burgess HJ et al. *Human phase response curves to three days of daily melatonin:
   0.5 mg versus 3.0 mg.* J Clin Endocrinol Metab, 2010.
+- Herxheimer A, Petrie KJ. *Melatonin for the prevention and treatment of jet lag.*
+  Cochrane Database Syst Rev, 2002. https://pubmed.ncbi.nlm.nih.gov/12076414/
+- Harpsøe NG et al. *Clinical pharmacokinetics of melatonin: a systematic review.*
+  Eur J Clin Pharmacol, 2015 (oral Tmax about 30–60 min).
 - Timeshifter's public science pages, for orientation only:
   https://www.timeshifter.com/circadian-rhythms

@@ -47,6 +47,8 @@ See [Disclaimer](#disclaimer).
 | **Whole hours only** | All advice uses whole clock hours ("sleep 9 pm – 5 am"), even in half-hour time zones such as India. |
 | **Multi-city trips** | One-way, round-trip and multi-city. Stays under 3 days count as short: you stay on your current clock. |
 | **Flight editing** | Change any flight and rebuild the plan. |
+| **Melatonin on the plane** | Optional: 1 h before an in-flight sleep of 4 h or more, never doubled with a clock-shifting dose. |
+| **Naps** | Optional: a 20–30 min early-afternoon nap on travel and adjustment days, plus naps on long flights. |
 | **Calendar reminders** | One tap downloads the plan as calendar events with alerts, for Apple, Google or Outlook Calendar. |
 | *Later:* now view | A "next 3 hours" view. |
 

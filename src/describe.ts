@@ -57,7 +57,12 @@ export function describe(a: Advice): { title: string; note?: string } {
     case 'sleep_flight':
       return { title: `Sleep on the plane ${fmtRange(a)}`, note: 'Eye mask and earplugs help' };
     case 'nap':
-      return { title: `Short nap OK between ${fmtRange(a)}`, note: 'Max 30 minutes. Skip it if you’re not tired' };
+      return {
+        title: `Short nap OK between ${fmtRange(a)}`,
+        note: a.inFlight
+          ? 'Max 30 minutes. Skip it if you’re not tired'
+          : '20–30 minutes max, set an alarm. Longer naps slow your adjustment',
+      };
     case 'light_seek':
       return {
         title: `Get bright light ${fmtRange(a)}`,
@@ -69,7 +74,9 @@ export function describe(a: Advice): { title: string; note?: string } {
         note: a.inFlight ? 'Shade down, eye mask on' : 'Sunglasses outside, dim lights inside',
       };
     case 'melatonin':
-      return { title: `Take melatonin at ${fmtTime(a.tz, a.start)}`, note: '0.5 mg, low dose' };
+      return a.purpose === 'sleep'
+        ? { title: `Take melatonin at ${fmtTime(a.tz, a.start)}`, note: 'To sleep on the plane: 0.5–3 mg fast-release, 1 hour before' }
+        : { title: `Take melatonin at ${fmtTime(a.tz, a.start)}`, note: '0.5 mg, low dose. Shifts your body clock' };
     case 'caffeine_cutoff':
       return { title: `No caffeine after ${fmtTime(a.tz, a.start)}` };
   }

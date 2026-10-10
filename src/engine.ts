@@ -12,6 +12,8 @@ export interface Profile {
   /** Days to start adjusting before the first departure (0–3). */
   preDays: number;
   melatonin: boolean;
+  /** Suggest short naps: in flight, and early afternoon on travel/adjustment days. */
+  naps: boolean;
   caffeine: boolean;
 }
 
@@ -45,6 +47,8 @@ export interface Advice {
   inFlight: boolean;
   /** Pre-travel sleep: hours earlier (+) or later (-) than the usual bedtime. */
   shiftFromUsual?: number;
+  /** Melatonin only: 'shift' moves the body clock; 'sleep' helps you fall asleep on the plane. */
+  purpose?: 'shift' | 'sleep';
   flight?: Flight;
 }
 
@@ -86,6 +90,12 @@ export const AIRPORT_AFTER_H = 1;
 /** Shorter scraps of sleep left over around flights aren't worth suggesting. */
 export const MIN_GROUND_SLEEP_H = 2;
 export const MIN_FLIGHT_SLEEP_H = 1;
+/** Melatonin to sleep on the plane: 1 h before (fast-release peaks in 30–60 min), only
+ *  if the planned in-flight sleep is long enough to sleep it off (§4). */
+export const FLIGHT_MELATONIN_BEFORE_H = 1;
+export const FLIGHT_MELATONIN_MIN_SLEEP_H = 4;
+/** Afternoon nap window, relative to tonight's bedtime: 9–7 h before (e.g. 1–3 pm for a 10 pm bedtime) (§6). */
+export const AFTERNOON_NAP_H = [-9, -7];
 /** In-flight nap rules (§6). */
 export const NAP_MIN_FLIGHT_H = 6;
 export const NAP_CLEAR_OF_SLEEP_H = 6;
@@ -194,6 +204,7 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
   let summaryHours = 0;
   let startShifting: number | undefined;
   let adaptedBy: number | undefined;
+  const napWindows: Interval[] = [];
 
   for (let night = 0; night < MAX_NIGHTS; night++) {
     const preTravel = cbt < firstDepart;
@@ -244,8 +255,14 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
       );
       if (direction === 'advance' && profile.melatonin) {
         const t = sleepStart - MELATONIN_BEFORE_SLEEP_H * HOUR;
-        raw.push({ kind: 'melatonin', start: t, ...locate(t, flights), inFlight: !!locate(t, flights).flight });
+        raw.push({ kind: 'melatonin', purpose: 'shift', start: t, ...locate(t, flights), inFlight: !!locate(t, flights).flight });
       }
+    }
+    // Afternoon nap on travel and adjustment days; not once adjusted, unless you landed that day.
+    const finishing = direction === 'none' && cbt + DAY > lastArrive;
+    const landedToday = flights.some((f) => f.arrive > sleepStart - DAY && f.arrive < sleepStart);
+    if (profile.naps && !preTravel && (!finishing || landedToday)) {
+      napWindows.push([sleepStart + AFTERNOON_NAP_H[0] * HOUR, sleepStart + AFTERNOON_NAP_H[1] * HOUR]);
     }
     if (profile.caffeine) {
       const t = sleepStart - CAFFEINE_CUTOFF_H * HOUR;
@@ -262,7 +279,7 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
   }
 
   return {
-    advice: finalize(raw, shifts, flights),
+    advice: finalize(raw, shifts, flights, profile, napWindows),
     direction: summaryDirection ?? 'none',
     shiftHours: summaryHours,
     startShifting,
@@ -276,6 +293,8 @@ function finalize(
   raw: Advice[],
   shifts: { kind: 'advance' | 'delay'; seek: Interval; avoid: Interval }[],
   flights: Flight[],
+  profile: Profile,
+  napWindows: Interval[],
 ): Advice[] {
   const out: Advice[] = [];
   const flightSpans: Interval[] = flights.map((f) => [f.depart, f.arrive]);
@@ -318,6 +337,7 @@ function finalize(
   // Naps: on long flights with no planned sleep, a short nap well clear of bedtime (§6).
   const seekSpans = lightPieces.filter((p) => p.kind === 'light_seek').map((p) => p.span);
   flights.forEach((f, i) => {
+    if (!profile.naps) return;
     if (f.arrive - f.depart < NAP_MIN_FLIGHT_H * HOUR) return;
     if (finalSleeps.some((s) => intersect(s, flightSpans[i]))) return;
     const nextSleep = finalSleeps.map((s) => s[0]).filter((t) => t >= f.depart).sort((a, b) => a - b)[0] ?? Infinity;
@@ -328,8 +348,32 @@ function finalize(
     if (best) out.push({ kind: 'nap', start: best[0], end: best[1], ...locate(best[0], flights), inFlight: true, flight: f });
   });
 
-  // Point advice passes through unchanged (melatonin, caffeine).
-  for (const a of raw) if (a.kind === 'melatonin' || a.kind === 'caffeine_cutoff') out.push(a);
+  // Afternoon naps on the ground: never in bright-light time, asleep, or around flights (§6).
+  for (const w of napWindows) {
+    const options = subtract(w, [...airportSpans, ...finalSleeps, ...seekSpans]).filter(([s, e]) => e - s >= HOUR);
+    const best = options.sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0];
+    if (best) out.push({ kind: 'nap', start: best[0], end: best[1], ...locate(best[0], flights), inFlight: false });
+  }
+
+  // Melatonin to sleep on the plane, 1 h before a long enough in-flight sleep (§4).
+  const flightDoses: number[] = [];
+  if (profile.melatonin) {
+    for (const a of out) {
+      if (a.kind !== 'sleep_flight' || a.end! - a.start < FLIGHT_MELATONIN_MIN_SLEEP_H * HOUR) continue;
+      const t = a.start - FLIGHT_MELATONIN_BEFORE_H * HOUR;
+      flightDoses.push(a.start);
+      const where = locate(t, flights);
+      out.push({ kind: 'melatonin', purpose: 'sleep', start: t, ...where, inFlight: !!where.flight, flight: a.flight });
+    }
+  }
+
+  // Point advice passes through (melatonin, caffeine). A clock-shifting dose meant for the
+  // same night as an in-flight dose is dropped so nobody doubles up.
+  const tooClose = (t: number) => flightDoses.some((s) => t >= s - 9 * HOUR && t <= s);
+  for (const a of raw) {
+    if (a.kind === 'caffeine_cutoff') out.push(a);
+    if (a.kind === 'melatonin' && !tooClose(a.start)) out.push(a);
+  }
 
   // Flights themselves (exact times, not rounded).
   for (const f of flights) {
