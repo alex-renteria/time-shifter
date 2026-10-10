@@ -58,6 +58,20 @@ export function flightPhase(a: Advice): string | undefined {
   return `${when} (${origin(a.start)} – ${origin(a.end)} ${f.from.city} time)`;
 }
 
+/** Daylight is assumed from 7 am to 6 pm local time: rough, but it only picks the wording. */
+const DAYLIGHT_HOURS = [7, 18];
+
+function daylight(a: Advice): 'day' | 'night' | 'mixed' {
+  let lit = 0;
+  let dark = 0;
+  for (let t = a.start; t < (a.end ?? a.start + HOUR); t += HOUR) {
+    const hour = zonedParts(a.tz, t).hour;
+    if (hour >= DAYLIGHT_HOURS[0] && hour < DAYLIGHT_HOURS[1]) lit++;
+    else dark++;
+  }
+  return dark === 0 ? 'day' : lit === 0 ? 'night' : 'mixed';
+}
+
 export function describe(a: Advice): { title: string; note?: string } {
   const base = describeBase(a);
   const phase = flightPhase(a);
@@ -87,15 +101,25 @@ function describeBase(a: Advice): { title: string; note?: string } {
           ? 'Max 30 minutes. Skip it if you’re not tired'
           : '20–30 minutes max, set an alarm. Longer naps slow your adjustment',
       };
-    case 'light_seek':
-      return {
-        title: `Get bright light ${fmtRange(a)}`,
-        note: a.inFlight ? 'Window shade open, cabin or screen light on' : 'Go outside, or sit by a bright window',
-      };
+    case 'light_seek': {
+      const day = daylight(a);
+      const note = a.inFlight
+        ? { day: 'Window shade open, reading light on', night: 'Reading light on, screen at full brightness', mixed: 'Window shade open while it’s light, then reading light and screen on' }[day]
+        : {
+            day: 'Go outside, or sit by a bright window',
+            night: 'Bright lights on indoors, or a light box if you have one. A phone or tablet at full brightness helps a little',
+            mixed: 'Daylight while it lasts, then bright lights on indoors',
+          }[day];
+      return { title: `Get bright light ${fmtRange(a)}`, note };
+    }
     case 'light_avoid':
       return {
         title: `Avoid bright light ${fmtRange(a)}`,
-        note: a.inFlight ? 'Shade down, eye mask on' : 'Sunglasses outside, dim lights inside',
+        note: a.inFlight
+          ? 'Shade down, eye mask on'
+          : daylight(a) === 'night'
+            ? 'Keep lights dim, screens on night mode or off'
+            : 'Sunglasses outside, dim lights inside',
       };
     case 'melatonin':
       return a.purpose === 'sleep'
