@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Personal jet lag planner: when to sleep, seek light, take melatonin and stop caffeine." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌗</text></svg>" />
+    <title>Time-Shifter</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>Time-Shifter</h1>
+      <p>Enter your normal sleep and your flights. Get an hour-by-hour plan to beat jet lag.</p>
+    </header>
+
+    <main>
+      <form id="trip-form" novalidate>
+        <section class="card">
+          <h2>Your normal sleep</h2>
+          <div class="row">
+            <label>Bedtime <select id="sleepHour"></select></label>
+            <label>Wake time <select id="wakeHour"></select></label>
+          </div>
+          <div class="row">
+            <label>Start adjusting
+              <select id="preDays">
+                <option value="0">on the day I fly</option>
+                <option value="1">1 day before</option>
+                <option value="2">2 days before</option>
+                <option value="3">3 days before</option>
+              </select>
+            </label>
+          </div>
+          <div class="row checks">
+            <label class="check"><input type="checkbox" id="melatonin" /> Include melatonin</label>
+            <label class="check"><input type="checkbox" id="caffeine" /> Include caffeine advice</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Flights <span class="muted" id="flight-count"></span></h2>
+          <div id="flights"></div>
+          <button type="button" id="add-flight" class="secondary">+ Add flight</button>
+        </section>
+
+        <ul id="errors" class="errors" hidden></ul>
+        <button type="submit" class="primary">Build my plan</button>
+      </form>
+
+      <section id="plan" hidden></section>
+    </main>
+
+    <datalist id="airports"></datalist>
+
+    <footer class="site-footer">
+      Personal project, not medical advice. Ask a doctor before using melatonin.
+      Not affiliated with Timeshifter Inc.
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

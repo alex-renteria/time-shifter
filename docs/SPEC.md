@@ -7,20 +7,23 @@ Generate a personalized, day-by-day jet lag plan for any itinerary, and show it 
 
 ## User inputs
 
-**Profile (one-time)**
-- Usual sleep time and wake time
-- Chronotype: early / intermediate / late
-- Melatonin: opt-in yes/no
-- Caffeine: yes/no
-- Willingness to start adjusting before the trip: yes/no
+**Profile**
+- Usual bedtime and wake time (whole hours, e.g. 10 pm – 6 am). These anchor everything.
+- Start adjusting: 0–3 days before the first flight
+- Melatonin advice: on/off
+- Caffeine advice: on/off
 
-**Trip**
-- One or more flight legs: departure airport + local time, arrival airport + local time
-- Stopovers: any number, each with its own legs
-- Return flight (optional)
+**Flights (1 to 4)**
+- Departure airport (picked from a list)
+- Departure date and local time
+- Flight duration (hours + minutes)
+- Arrival airport
 
-Time zones come from the airport codes, using IANA tz data. Never ask the user for UTC
-offsets: daylight saving time changes would make them wrong.
+The arrival time is **computed**, not entered, and shown for checking ("Arrives London
+Sun 18 Oct, 3:30 pm local time"). Asking for both duration and arrival time would let a
+typo create a contradiction. Each airport maps to an IANA time zone, so daylight saving
+is right for the exact date. Users never type UTC offsets. The gap between flights is a
+stay. A stay under 72 h is "short" and the plan doesn't adapt to it.
 
 ## Outputs
 
@@ -35,8 +38,10 @@ A list of timestamped **advice items**:
 | `caffeine_ok` / `caffeine_avoid` | "Caffeine OK until 13:00" |
 | `melatonin` | "Take 0.5 mg melatonin at 18:00" |
 
-Each item carries: start, end, local time zone, the reason (linked to the matching
-`SCIENCE.md` section) and a priority, which the real-world filter uses.
+Each item carries a start, an optional end, and the time zone to show it in (where the
+traveler is; destination time while on board). All advice times are rounded to whole
+hours on the local clock. The engine works in exact minutes and rounds only at the end,
+so half-hour zones (India, Nepal, Newfoundland) still come out right.
 
 ## The algorithm, at a high level
 
@@ -63,19 +68,20 @@ inside it, so it is easy to test against hand-worked cases and published example
 
 | Phase | Deliverable | Why this order |
 |---|---|---|
-| **0. Docs** | This spec + the science notes | Settle the rules before writing code |
-| **1. Engine** | Pure plan-generation library + unit tests, with known trips (e.g. SFO→LHR, JFK→NRT, MEX→MAD) as golden test cases | The algorithm is the product. Validate it before building any UI |
-| **2. CLI** | `time-shifter plan --from SFO --to LHR --depart ...` that prints the timeline | The fastest way to use it on a real trip and see how it feels |
-| **3. Web app (PWA)** | Trip entry form, now view, full timeline, works offline | Works on a phone without the app stores. Installable to the home screen |
+| **0. Docs** ✅ | This spec + the science notes | Settle the rules before writing code |
+| **1. Engine** ✅ | `src/engine.ts`, a pure function, plus tests on known trips (LAX→LHR, JFK→NRT, MEX→MAD, LHR→DEL, a 4-leg trip) | The algorithm is the product. Validate it before building any UI |
+| **2. Website** ✅ | Static site: sleep profile, up to 4 flights, day-by-day plan; saves the form in the browser | Works on any phone with nothing to install |
+| **3. Hosting + PWA** | Deploy (Vercel or GitHub Pages), add-to-home-screen, offline | Use it on a real trip |
 | **4. Notifications** | Web push or calendar export (.ics) of the advice | .ics is a cheap first step: reminders come from your existing calendar |
 | **5. Nice-to-haves** | Flight lookup by flight number, delay re-planning, sleep tracker import, feedback loop to tune personal shift rates | Personalization after the base works |
 
 ## Open decisions
 
-- **Stack.** Leaning toward TypeScript end to end, so one engine can serve the CLI, web
-  app and service worker. Python is the alternative if fast iteration on the engine
-  matters more.
-- **Plan storage.** Local-only (IndexedDB) at first. Sync only if it's ever needed.
+- **Stack (decided).** Vite + TypeScript, no UI framework, no backend. The form is saved
+  in the browser's localStorage only.
+- **Short-trip sleep.** On a short trip the plan keeps you on home time, which can mean
+  "sleep 6 am – 2 pm" abroad. That's correct for the body clock, but a softer compromise
+  (sleep partly toward local time) may suit real life better. To be tested.
 - **Validation.** How do I check the plans are actually good? Option: compare against
   worked examples in Eastman & Burgess 2009, and keep a simple personal travel log
   (jet lag severity 1–5 per day).

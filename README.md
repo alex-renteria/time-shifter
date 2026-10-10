@@ -7,8 +7,17 @@ You enter a trip. Time-Shifter builds an hour-by-hour plan telling you **when to
 light, when to avoid it, when to sleep, and when to use (or skip) caffeine and
 melatonin**, so your body clock moves to the destination's time zone faster.
 
-> **Status:** planning. This repo holds the product vision and the science notes.
-> No code has been written yet.
+> **Status:** first working version. A static website: enter your normal sleep and up to
+> 4 flights, and get a day-by-day plan. Everything runs in your browser. No server, no account.
+
+## Run it
+
+```bash
+npm install
+npm run dev     # local site at http://localhost:5173
+npm test        # engine + time zone tests
+npm run build   # static site in dist/, ready to host anywhere
+```
 
 ## Why build my own
 
@@ -31,10 +40,11 @@ See [Disclaimer](#disclaimer).
 | **Real-world filter** | Advice is reshaped to fit real life: no "see bright light at 3 am" while you're asleep, and it respects meetings and flights. |
 | **Pre-travel adjustment** | Optionally start shifting 1–3 days before departure. |
 | **Short-trip mode** | For trips of about 2–3 days or less, stay mostly on home time instead of adapting and then adapting back. |
-| **Complex itineraries** | One-way, round-trip and multi-city trips, with any number of stopovers. |
-| **Flight editing** | Edit a delayed or cancelled flight and the plan recalculates. |
-| **Now view + full plan** | A short "next 3 hours" view for the moment, plus the full timeline for planning ahead. |
-| **Advice notifications** | Reminders at the right moments, readable without opening the app. |
+| **Simple trip entry** | Up to 4 flights. Each one is departure airport, date and local time, duration, and arrival airport. The site works out the local arrival time. No flight-number lookup needed. |
+| **Whole hours only** | All advice uses whole clock hours ("sleep 9 pm – 5 am"), even in half-hour time zones such as India. |
+| **Multi-city trips** | One-way, round-trip and multi-city. Stays under 3 days count as short: you stay on your current clock. |
+| **Flight editing** | Change any flight and rebuild the plan. |
+| *Later:* now view, notifications | A "next 3 hours" view and reminders (calendar export first). |
 
 The detailed spec, data model and roadmap are in [`docs/SPEC.md`](docs/SPEC.md).
 The science behind the algorithm is in [`docs/SCIENCE.md`](docs/SCIENCE.md).

@@ -1,5 +1,8 @@
 # The science behind the planner
 
+Every number below exists as a named constant at the top of `src/engine.ts`, so the
+rules can be tuned in one place.
+
 These notes justify every rule the algorithm will use. Every rule in the code should
 point back to a section here. The numbers are approximate, population-average figures
 from the literature. People differ, so the planner should treat them as tunable defaults.
@@ -56,6 +59,9 @@ Rules that follow:
     not recommended because it causes drowsiness.
 - Low doses (around 0.5 mg) shift the clock about as well as higher doses, with less
   next-day grogginess.
+- **What the planner does:** when advancing, 0.5 mg about 4 h before the target bedtime
+  that night (the literature puts the best timing roughly 3–5 h before bedtime).
+  No melatonin advice when delaying.
 - A separate effect: at bedtime, melatonin can also help you fall asleep at an
   unfamiliar time.
 - The planner makes this **opt-in**, with a medical disclaimer.
