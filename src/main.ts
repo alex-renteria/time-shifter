@@ -1,6 +1,6 @@
 import './style.css';
 import { AIRPORTS, airportLabel, findAirport } from './airports';
-import { buildPlan, validate, type Flight, type Plan, type Profile } from './engine';
+import { buildPlan, validate, type Advice, type Flight, type Plan, type Profile } from './engine';
 import { describe, fmtDate, fmtHour, fmtTime, ICONS } from './describe';
 import { buildIcs } from './ics';
 import { HOUR, localDateKey, zonedParts, zonedToInstant } from './time';
@@ -30,7 +30,7 @@ function todayPlus(days: number): string {
 }
 
 const DEFAULT_STATE: FormState = {
-  profile: { sleepHour: 22, wakeHour: 6, preDays: 3, melatonin: true, caffeine: true, naps: true },
+  profile: { sleepHour: 22, wakeHour: 6, preDays: 3, postDays: 2, melatonin: true, caffeine: true, naps: true },
   flights: [{ from: 'LAX', to: 'LHR', date: todayPlus(7), time: '21:00', hours: 10, minutes: 30 }],
 };
 
@@ -87,6 +87,7 @@ function initProfile() {
   fillHourSelect($('sleepHour'), p.sleepHour);
   fillHourSelect($('wakeHour'), p.wakeHour);
   $<HTMLSelectElement>('preDays').value = String(p.preDays);
+  $<HTMLSelectElement>('postDays').value = String(p.postDays);
   $<HTMLInputElement>('melatonin').checked = p.melatonin;
   $<HTMLInputElement>('caffeine').checked = p.caffeine;
   $<HTMLInputElement>('naps').checked = p.naps;
@@ -96,13 +97,14 @@ function initProfile() {
       sleepHour: Number($<HTMLSelectElement>('sleepHour').value),
       wakeHour: Number($<HTMLSelectElement>('wakeHour').value),
       preDays: Number($<HTMLSelectElement>('preDays').value),
+      postDays: Number($<HTMLSelectElement>('postDays').value),
       melatonin: $<HTMLInputElement>('melatonin').checked,
       caffeine: $<HTMLInputElement>('caffeine').checked,
       naps: $<HTMLInputElement>('naps').checked,
     };
     saveState();
   };
-  for (const id of ['sleepHour', 'wakeHour', 'preDays', 'melatonin', 'caffeine', 'naps']) $(id).addEventListener('change', sync);
+  for (const id of ['sleepHour', 'wakeHour', 'preDays', 'postDays', 'melatonin', 'caffeine', 'naps']) $(id).addEventListener('change', sync);
 }
 
 // --- Flight inputs -------------------------------------------------------------------
@@ -253,22 +255,55 @@ function calendarCard(plan: Plan): HTMLElement {
   );
 }
 
+/** A bar from takeoff to landing showing what to do when, with hour marks below. */
+function flightTimeline(f: Flight, items: Advice[]): HTMLElement {
+  const total = f.arrive - f.depart;
+  const pct = (t: number) => `${(Math.min(Math.max(t - f.depart, 0), total) / total) * 100}%`;
+  const bar = h('div', { class: 'tl-bar' });
+  for (const a of items) {
+    if (a.end === undefined) {
+      bar.append(h('span', { class: `tl-mark ${a.kind}`, title: describe(a).title, style: `left:${pct(a.start)}` } as never, ICONS[a.kind]));
+    } else {
+      const left = Math.max(a.start, f.depart);
+      const width = (Math.min(a.end, f.arrive) - left) / total;
+      bar.append(h('span', { class: `tl-seg ${a.kind}`, title: describe(a).title, style: `left:${pct(left)};width:${width * 100}%` } as never));
+    }
+  }
+  const hours = total / HOUR;
+  const step = hours <= 8 ? 1 : hours <= 14 ? 2 : 3;
+  const ticks = h('div', { class: 'tl-ticks' });
+  for (let k = 0; k * step <= hours; k++) {
+    const t = f.depart + k * step * HOUR;
+    ticks.append(
+      h('span', { style: `left:${pct(t)}` } as never, h('b', { textContent: k === 0 ? 'Takeoff' : `+${k * step} h` }), fmtTime(f.to.tz, t)),
+    );
+  }
+  const legend = h(
+    'p',
+    { class: 'tl-legend muted' },
+    `Times under the bar are ${f.to.city} time. Lands ${fmtTime(f.to.tz, f.arrive)} after ${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min.`,
+  );
+  return h('div', { class: 'timeline' }, bar, ticks, legend);
+}
+
 function renderPlan(plan: Plan, flights: Flight[], profile: Profile) {
   const section = $('plan');
   section.replaceChildren(summary(plan, flights, profile), calendarCard(plan));
 
-  // Group into days on the local clock of wherever you are.
+  // Group into days on the local clock of wherever you are; each flight gets its own card.
   let currentKey = '';
   let list: HTMLUListElement | null = null;
   for (const a of plan.advice) {
-    const key = `${localDateKey(a.tz, a.start)}|${a.tz}`;
+    const onBoard = a.inFlight && a.flight;
+    const key = onBoard ? `flight|${a.flight!.depart}` : `${localDateKey(a.tz, a.start)}|${a.tz}`;
     if (key !== currentKey) {
       currentKey = key;
-      const placeName = a.inFlight && a.flight ? `${a.flight.to.city} time` : a.place;
       list = h('ul', { class: 'advice' });
-      section.append(
-        h('div', { class: 'card day' }, h('h3', {}, fmtDate(a.tz, a.start), h('span', { class: 'muted' }, ` · ${placeName}`)), list),
-      );
+      if (!onBoard) {
+        section.append(
+          h('div', { class: 'card day' }, h('h3', {}, fmtDate(a.tz, a.start), h('span', { class: 'muted' }, ` · ${a.place}`)), list),
+        );
+      }
     }
     const { title, note } = describe(a);
     list!.append(
@@ -279,6 +314,23 @@ function renderPlan(plan: Plan, flights: Flight[], profile: Profile) {
         h('span', { class: 'text' }, h('strong', { textContent: title }), note ? h('small', { textContent: note }) : null),
       ),
     );
+
+    // Every flight gets its own card with a takeoff-to-landing timeline, right after departure.
+    if (a.kind === 'depart' && a.flight) {
+      const f = a.flight;
+      const onBoardItems = plan.advice.filter((x) => x.inFlight && x.flight === f);
+      list = h('ul', { class: 'advice' });
+      currentKey = `flight|${f.depart}`;
+      section.append(
+        h(
+          'div',
+          { class: 'card day flight-card' },
+          h('h3', {}, `✈️ ${f.from.city} → ${f.to.city}`, h('span', { class: 'muted' }, ' · on board')),
+          flightTimeline(f, onBoardItems),
+          onBoardItems.length ? list : h('p', { class: 'muted', textContent: 'Nothing to time on this flight. Rest, and drink water.' }),
+        ),
+      );
+    }
   }
 
   section.hidden = false;

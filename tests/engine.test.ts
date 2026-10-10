@@ -97,6 +97,13 @@ describe('real-world rules', () => {
         }
       });
 
+      it('keeps on-board advice between takeoff and landing', () => {
+        for (const a of advice.filter((x) => x.inFlight && x.flight)) {
+          expect(a.start).toBeGreaterThanOrEqual(a.flight!.depart);
+          expect(a.end ?? a.start).toBeLessThanOrEqual(a.flight!.arrive);
+        }
+      });
+
       it('finishes adapted to the final destination', () => {
         expect(plan.adaptedBy).toBeGreaterThan(flights.at(-1)!.arrive);
         const last = of(advice, 'sleep').at(-1)!;

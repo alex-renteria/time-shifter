@@ -142,3 +142,39 @@ button.link { border: 0; background: none; color: var(--muted); font-size: 0.8re
 
 .calendar p { margin: 0 0 10px; font-size: 0.9rem; }
 .calendar label.check { margin-bottom: 12px; }
+
+/* In-flight timeline */
+.timeline { margin: 4px 0 14px; }
+.tl-bar {
+  position: relative;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.tl-seg { position: absolute; top: 0; bottom: 0; opacity: 0.85; }
+.tl-seg.sleep_flight { background: var(--sleep); }
+.tl-seg.nap { background: color-mix(in srgb, var(--sleep) 45%, transparent); }
+.tl-seg.light_seek { background: var(--light); }
+.tl-seg.light_avoid { background: var(--dark); opacity: 0.55; }
+.tl-mark {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 15px;
+  line-height: 1;
+  filter: drop-shadow(0 0 2px var(--surface));
+}
+.tl-ticks { position: relative; height: 34px; margin: 4px 8px 0; font-size: 0.7rem; color: var(--muted); }
+.tl-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+.tl-ticks b { color: var(--text); font-weight: 600; }
+.tl-legend { font-size: 0.8rem; margin: 6px 0 0; }

@@ -10,6 +10,7 @@ Generate a personalized, day-by-day jet lag plan for any itinerary, and show it 
 **Profile**
 - Usual bedtime and wake time (whole hours, e.g. 10 pm – 6 am). These anchor everything.
 - Start adjusting: 0–3 days before the first flight
+- Finish adjusting: when I land, or 1 or 2 days after landing (default 2)
 - Melatonin advice: on/off
 - Caffeine advice: on/off
 

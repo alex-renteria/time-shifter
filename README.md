@@ -49,6 +49,8 @@ See [Disclaimer](#disclaimer).
 | **Flight editing** | Change any flight and rebuild the plan. |
 | **Melatonin on the plane** | Optional: 1 h before an in-flight sleep of 4 h or more, never doubled with a clock-shifting dose. |
 | **Naps** | Optional: a 20–30 min early-afternoon nap on travel and adjustment days, plus naps on long flights. |
+| **Adjust after landing** | Choose to finish adjusting 1–2 days after you land, so each day's change is smaller. |
+| **In-flight timeline** | Each flight gets a takeoff-to-landing bar with hour marks and destination time. Every on-board step says "2–6 h after takeoff", so you don't need to know the time on the plane. |
 | **Calendar reminders** | One tap downloads the plan as calendar events with alerts, for Apple, Google or Outlook Calendar. |
 | *Later:* now view | A "next 3 hours" view. |
 

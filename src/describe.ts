@@ -1,7 +1,7 @@
 // Human wording for advice, shared by the web page and the calendar export.
 
 import type { Advice } from './engine';
-import { zonedParts } from './time';
+import { HOUR, zonedParts } from './time';
 
 // --- Formatting ----------------------------------------------------------------------
 
@@ -40,7 +40,31 @@ export const ICONS: Record<Advice['kind'], string> = {
   caffeine_cutoff: '☕',
 };
 
+/** Where in the flight a step falls, for when you don't know the time on board:
+ *  "2–6 h after takeoff (10:30 pm – 2:30 am Los Angeles time)". */
+export function flightPhase(a: Advice): string | undefined {
+  const f = a.flight;
+  if (!a.inFlight || !f) return undefined;
+  const dur = Math.round((f.arrive - f.depart) / HOUR);
+  const h = (t: number) => Math.max(0, Math.min(dur, Math.round((t - f.depart) / HOUR)));
+  const origin = (t: number) => fmtTime(f.from.tz, t);
+  if (a.end === undefined) return `${h(a.start)} h after takeoff (${origin(a.start)} ${f.from.city} time)`;
+  const [h0, h1] = [h(a.start), h(a.end)];
+  const when =
+    h0 === 0 && h1 === dur ? 'The whole flight'
+    : h0 === 0 ? `First ${h1} h of the flight`
+    : h1 === dur ? `Last ${dur - h0} h before landing`
+    : `${h0}–${h1} h after takeoff`;
+  return `${when} (${origin(a.start)} – ${origin(a.end)} ${f.from.city} time)`;
+}
+
 export function describe(a: Advice): { title: string; note?: string } {
+  const base = describeBase(a);
+  const phase = flightPhase(a);
+  return phase ? { title: base.title, note: base.note ? `${phase}. ${base.note}` : phase } : base;
+}
+
+function describeBase(a: Advice): { title: string; note?: string } {
   switch (a.kind) {
     case 'depart':
       return { title: `Depart ${a.flight!.from.code} at ${fmtTime(a.tz, a.start)}`, note: `To ${a.flight!.to.city}` };

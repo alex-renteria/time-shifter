@@ -42,6 +42,12 @@ Rules that follow:
 - Without help, the clock adapts at roughly **1 h/day**, and more slowly when advancing.
 - With well-timed light (and melatonin), it can move about **1–1.5 h/day** when
   advancing and **1.5–2 h/day** when delaying.
+- **Spreading the shift.** The traveler picks when adjustment should be finished: on
+  landing, or 1 or 2 days after. The planner spreads the shift evenly, in whole hours,
+  over every night from the first pre-travel night to that deadline, never faster than
+  the rates above. Finishing after landing means smaller steps each day, and sleep on
+  arrival day sits partway between home and local time instead of jumping straight to
+  local time.
 - **Eastward trips are harder.** The clock naturally drifts slightly later each day, so
   delaying comes easier than advancing.
 - **Direction for big shifts:** for eastward shifts of about **8–9 h or more**, it can be

@@ -11,6 +11,9 @@ export interface Profile {
   wakeHour: number;
   /** Days to start adjusting before the first departure (0–3). */
   preDays: number;
+  /** Days after the last landing by which adjustment should be finished (0–2). The shift
+   *  is spread evenly up to then, so it isn't all crammed in before arrival. */
+  postDays: number;
   melatonin: boolean;
   /** Suggest short naps: in flight, and early afternoon on travel/adjustment days. */
   naps: boolean;
@@ -205,6 +208,7 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
   let startShifting: number | undefined;
   let adaptedBy: number | undefined;
   const napWindows: Interval[] = [];
+  let lastShiftNight: number | undefined;
 
   for (let night = 0; night < MAX_NIGHTS; night++) {
     const preTravel = cbt < firstDepart;
@@ -226,7 +230,12 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
     if (!allowShift) direction = 'none';
 
     const rate = preTravel ? PRE_TRAVEL_RATE_H : direction === 'advance' ? ADVANCE_RATE_H : DELAY_RATE_H;
-    const r = direction === 'none' ? 0 : Math.min(rate, remaining);
+    // Spread the shift evenly over the nights left until the "finish adjusting" deadline,
+    // in whole hours, never faster than the rate limit (§3).
+    const deadline = lastArrive + profile.postDays * DAY;
+    const nightsLeft = Math.max(1, Math.floor((deadline - cbt) / DAY) + 1);
+    const even = Math.max(0, Math.ceil(remaining / nightsLeft - 0.5)); // round half down: the last step lands on the deadline
+    const r = direction === 'none' ? 0 : Math.min(rate, remaining, nightsLeft === 1 ? remaining : even);
     const step = direction === 'advance' ? r : -r; // change in bodyOffset
 
     // Tonight's sleep follows the clock as it will be after tonight's shift.
@@ -269,11 +278,13 @@ export function buildPlan(profile: Profile, flights: Flight[]): Plan {
       raw.push({ kind: 'caffeine_cutoff', start: t, ...locate(t, flights), inFlight: !!locate(t, flights).flight });
     }
 
+    if (r > 0) lastShiftNight = sleepStart;
     bodyOffset += step;
     cbt += DAY - step * HOUR;
 
     if (cbt > lastArrive && direction === 'none' && !preTravel) {
-      adaptedBy = sleepStart;
+      // The last night that shifted already ends on local time, if it was after landing.
+      adaptedBy = lastShiftNight !== undefined && lastShiftNight > lastArrive ? lastShiftNight : sleepStart;
       break;
     }
   }
@@ -385,8 +396,13 @@ function finalize(
   const rounded = out
     .map((a) => {
       if (a.kind === 'depart' || a.kind === 'arrive') return a;
-      const start = roundToLocalHour(a.tz, a.start);
-      const end = a.end === undefined ? undefined : roundToLocalHour(a.tz, a.end);
+      let start = roundToLocalHour(a.tz, a.start);
+      let end = a.end === undefined ? undefined : roundToLocalHour(a.tz, a.end);
+      // On board, stay within the flight even when takeoff or landing is off the hour.
+      if (a.inFlight && a.flight) {
+        if (start < a.flight.depart) start = snapLocalHour(a.tz, a.flight.depart, 'up');
+        if (end !== undefined && end > a.flight.arrive) end = snapLocalHour(a.tz, a.flight.arrive, 'down');
+      }
       return { ...a, start, end };
     })
     .filter((a) => a.end === undefined || a.end > a.start);

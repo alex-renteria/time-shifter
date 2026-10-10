@@ -2,7 +2,7 @@ import { findAirport } from '../src/airports';
 import type { Flight, Profile } from '../src/engine';
 import { HOUR, zonedToInstant } from '../src/time';
 
-export const profile: Profile = { sleepHour: 22, wakeHour: 6, preDays: 3, melatonin: true, caffeine: true, naps: true };
+export const profile: Profile = { sleepHour: 22, wakeHour: 6, preDays: 3, postDays: 0, melatonin: true, caffeine: true, naps: true };
 
 export function flight(from: string, to: string, date: string, time: string, hours: number): Flight {
   const a = findAirport(from)!;
